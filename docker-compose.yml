@@ -1,0 +1,81 @@
+
+services:
+  app:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: onfly-app
+    restart: unless-stopped
+    working_dir: /var/www/html
+    user: "${UID:-1000}:${GID:-1000}"
+    volumes:
+      - ./backend:/var/www/html
+    depends_on:
+      - db
+    environment:
+      APP_ENV: local
+      APP_DEBUG: "true"
+      APP_URL: http://localhost:8080
+      DB_CONNECTION: mysql
+      DB_HOST: db
+      DB_PORT: 3306
+      DB_DATABASE: onfly
+      DB_USERNAME: onfly
+      DB_PASSWORD: secret
+    networks:
+      - onfly-network
+
+  nginx:
+    image: nginx:1.27-alpine
+    container_name: onfly-nginx
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+    volumes:
+      - ./backend:/var/www/html
+      - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf
+    depends_on:
+      - app
+    networks:
+      - onfly-network
+
+  db:
+    image: mysql:8.0
+    container_name: onfly-db
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: onfly
+      MYSQL_USER: onfly
+      MYSQL_PASSWORD: secret
+      MYSQL_ROOT_PASSWORD: root
+    ports:
+      - "3307:3306"
+    volumes:
+      - db_data:/var/lib/mysql
+    command: --default-authentication-plugin=mysql_native_password
+    networks:
+      - onfly-network
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: onfly-frontend
+    restart: unless-stopped
+    working_dir: /app
+    user: "${UID:-1000}:${GID:-1000}"
+    volumes:
+      - ./frontend:/app
+    ports:
+      - "5173:5173"
+    environment:
+      VITE_API_BASE_URL: http://localhost:8080/api
+    networks:
+      - onfly-network
+
+volumes:
+  db_data:
+
+networks:
+  onfly-network:
+    driver: bridge
