@@ -17,35 +17,41 @@ class TravelOrderController extends Controller
     {
         $user = $request->user();
 
-        $query = TravelOrder::query()
-            ->with('user');
+        // Validação leve dos filtros
+        $validated = $request->validate([
+            'status'      => ['nullable', 'in:solicitado,aprovado,cancelado'],
+            'destination' => ['nullable', 'string'],
+            'start_date'  => ['nullable', 'date'],
+            'end_date'    => ['nullable', 'date', 'after_or_equal:start_date'],
+        ]);
 
-        // Usuário comum vê apenas seus próprios pedidos
-        if (! $user->isAdmin()) {
-            $query->where('user_id', $user->id);
+        $query = TravelOrder::with('user')
+            ->where('user_id', $user->id);
+
+        if (!empty($validated['status'])) {
+            $query->where('status', $validated['status']);
         }
 
-        // Filtro por status
-        if ($status = $request->query('status')) {
-            $query->where('status', $status);
+        if (!empty($validated['destination'])) {
+            $query->where('destination', 'like', '%' . $validated['destination'] . '%');
         }
 
-        // Filtro por destino
-        if ($destination = $request->query('destination')) {
-            $query->where('destination', 'like', "%{$destination}%");
+        // Filtro de intervalo de datas com overlap
+        if (!empty($validated['start_date']) && !empty($validated['end_date'])) {
+            $start = $validated['start_date'];
+            $end   = $validated['end_date'];
+
+            $query->where(function ($q) use ($start, $end) {
+                $q->whereDate('departure_date', '<=', $end)
+                ->whereDate('return_date', '>=', $start);
+            });
         }
 
-        // Filtro por período de data de viagem
-        if ($from = $request->query('date_from')) {
-            $query->whereDate('departure_date', '>=', $from);
-        }
+        $orders = $query->orderByDesc('created_at')->paginate(10);
 
-        if ($to = $request->query('date_to')) {
-            $query->whereDate('return_date', '<=', $to);
-        }
-
-        return $query->orderByDesc('created_at')->paginate(10);
+        return response()->json($orders);
     }
+
 
     /**
      * Cria um novo pedido de viagem vinculado ao usuário autenticado.

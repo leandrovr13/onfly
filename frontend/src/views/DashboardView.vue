@@ -46,7 +46,7 @@
     <div class="filters">
       <label>
         Status:
-        <select v-model="filters.status" @change="applyFilters">
+        <select v-model="filters.status">
           <option value="">Todos</option>
           <option value="solicitado">Solicitado</option>
           <option value="aprovado">Aprovado</option>
@@ -56,9 +56,34 @@
 
       <label>
         Destino:
-        <input v-model="filters.destination" @keyup.enter="applyFilters" placeholder="Buscar destino..." />
+        <input
+          v-model="filters.destination"
+          placeholder="Buscar destino..."
+          type="text"
+        />
       </label>
+
+      <label>
+        Data inicial:
+        <input
+          v-model="filters.start_date"
+          type="date"
+        />
+      </label>
+
+      <label>
+        Data final:
+        <input
+          v-model="filters.end_date"
+          type="date"
+        />
+      </label>
+
+      <button @click="loadOrders">
+        Filtrar
+      </button>
     </div>
+
 
     <div v-if="loading">Carregando...</div>
 
@@ -78,8 +103,8 @@
         <tr v-for="order in orders" :key="order.id">
           <td>{{ order.id }}</td>
           <td>{{ order.destination }}</td>
-          <td>{{ order.departure_date }}</td>
-          <td>{{ order.return_date }}</td>
+          <td>{{ formatDate(order.departure_date) }}</td>
+          <td>{{ formatDate(order.return_date) }}</td>
           <td>{{ order.status }}</td>
           <td>{{ order.user.name }}</td>
             <td v-if="isAdmin">
@@ -114,6 +139,7 @@
 import { ref, onMounted } from 'vue'
 import api from '../services/api'
 import { useRouter } from 'vue-router'
+import { formatDate } from '../utils/date';
 
 // router para logout
 const router = useRouter()
@@ -125,7 +151,9 @@ const showCreateModal = ref(false)
 
 const filters = ref({
   status: '',
-  destination: ''
+  destination: '',
+  start_date: '',
+  end_date: ''
 })
 
 const form = ref({
@@ -192,8 +220,10 @@ async function loadOrders() {
 
     const response = await api.get('/travel-orders', {
       params: {
-        status: filters.value.status,
-        destination: filters.value.destination
+        status: filters.value.status || undefined,
+        destination: filters.value.destination || undefined,
+        start_date: filters.value.start_date || undefined,
+        end_date: filters.value.end_date || undefined
       }
     })
 
