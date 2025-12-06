@@ -17,37 +17,40 @@ class TravelOrderController extends Controller
     {
         $user = $request->user();
 
-        // Validação leve dos filtros
-        $validated = $request->validate([
-            'status'      => ['nullable', 'in:solicitado,aprovado,cancelado'],
-            'destination' => ['nullable', 'string'],
-            'start_date'  => ['nullable', 'date'],
-            'end_date'    => ['nullable', 'date', 'after_or_equal:start_date'],
-        ]);
+        // base da query, já trazendo o usuário
+        $query = TravelOrder::with('user');
 
-        $query = TravelOrder::with('user')
-            ->where('user_id', $user->id);
-
-        if (!empty($validated['status'])) {
-            $query->where('status', $validated['status']);
+        // se NÃO for admin, restringe aos pedidos do próprio usuário
+        if (! $user->isAdmin()) {
+            $query->where('user_id', $user->id);
         }
 
-        if (!empty($validated['destination'])) {
-            $query->where('destination', 'like', '%' . $validated['destination'] . '%');
+        // filtros opcionais
+        if ($status = $request->input('status')) {
+            $query->where('status', $status);
         }
 
-        // Filtro de intervalo de datas com overlap
-        if (!empty($validated['start_date']) && !empty($validated['end_date'])) {
-            $start = $validated['start_date'];
-            $end   = $validated['end_date'];
+        if ($destination = $request->input('destination')) {
+            $query->where('destination', 'like', "%{$destination}%");
+        }
 
-            $query->where(function ($q) use ($start, $end) {
-                $q->whereDate('departure_date', '<=', $end)
-                ->whereDate('return_date', '>=', $start);
+        // filtro por intervalo de datas (sua regra de interseção)
+        $startDate = $request->input('start_date');
+        $endDate   = $request->input('end_date');
+
+        if ($startDate && $endDate) {
+            $query->where(function ($q) use ($startDate, $endDate) {
+                $q->whereBetween('departure_date', [$startDate, $endDate])
+                ->orWhereBetween('return_date', [$startDate, $endDate])
+                ->orWhere(function ($inner) use ($startDate, $endDate) {
+                        $inner->where('departure_date', '<', $startDate)
+                            ->where('return_date', '>', $endDate);
+                });
             });
         }
 
-        $orders = $query->orderByDesc('created_at')->paginate(10);
+        // ordenação básica e paginação
+        $orders = $query->orderByDesc('id')->paginate(10);
 
         return response()->json($orders);
     }

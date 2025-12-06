@@ -7,9 +7,12 @@ use Illuminate\Support\Facades\Route;
 
 // Login público
 Route::post('/auth/login', [AuthController::class, 'login']);
+Route::post('/auth/register', [AuthController::class, 'register']);
 
 // Rotas protegidas
 Route::middleware('auth:sanctum')->group(function () {
+    
+    Route::post('/auth/profile', [AuthController::class, 'updateProfile']);
     
     Route::get('/user', function (Request $request) {
         return $request->user();

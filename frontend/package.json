@@ -9,7 +9,12 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@primeuix/themes": "^2.0.2",
     "axios": "^1.13.2",
+    "cropperjs": "^1.5.13",
+    "primeflex": "^4.0.0",
+    "primeicons": "^7.0.0",
+    "primevue": "^4.5.1",
     "vue": "^3.5.24",
     "vue-router": "^4.6.3"
   },
