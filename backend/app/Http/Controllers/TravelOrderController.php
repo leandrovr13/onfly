@@ -30,6 +30,10 @@ class TravelOrderController extends Controller
             $query->where('status', $status);
         }
 
+        if ($id = $request->input('id')) {
+            $query->where('id', $id);
+        }
+
         if ($destination = $request->input('destination')) {
             $query->where('destination', 'like', "%{$destination}%");
         }

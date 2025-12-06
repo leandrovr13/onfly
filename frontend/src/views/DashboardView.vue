@@ -27,66 +27,90 @@
             </template>
 
             <template #content>
-              <!-- Filtros -->
-              <div class="filters-grid">
-                <div class="field">
-                  <label>Status</label>
-                  <Dropdown
-                    v-model="filters.status"
-                    :options="statusOptions"
-                    optionLabel="label"
-                    optionValue="value"
-                    placeholder="Todos"
-                    showClear
-                    class="w-full"
-                  />
-                </div>
+              <!-- Bloco de Filtros -->
+              <Card class="filters-card">
+                <template #title>
+                  <span class="filters-title">Filtros</span>
+                </template>
+                <template #content>
+                  <div class="filters-grid">
+                        <!-- LINHA 1 -->
+                        <div class="field field-id">
+                          <label>ID do Pedido</label>
+                          <InputText
+                            v-model="filters.id"
+                            class="w-full"
+                            type="number"
+                            min="1"
+                            placeholder="Ex: 5"
+                          />
+                        </div>
 
-                <div class="field">
-                  <label>Destino</label>
-                  <InputText
-                    v-model="filters.destination"
-                    placeholder="Buscar destino..."
-                    class="w-full"
-                  />
-                </div>
+                        <div class="field field-status">
+                          <label>Status</label>
+                          <Dropdown
+                            v-model="filters.status"
+                            :options="statusOptions"
+                            optionLabel="label"
+                            optionValue="value"
+                            placeholder="Todos"
+                            showClear
+                            class="w-full"
+                          />
+                        </div>
 
-                <div class="field">
-                  <label>Data inicial</label>
-                  <Calendar
-                    v-model="filters.start_date"
-                    dateFormat="dd/mm/yy"
-                    showIcon
-                    class="w-full"
-                  />
-                </div>
+                        <div class="field field-start-date">
+                          <label>Data inicial</label>
+                          <Calendar
+                            v-model="filters.start_date"
+                            dateFormat="dd/mm/yy"
+                            showIcon
+                            class="w-full"
+                          />
+                        </div>
 
-                <div class="field">
-                  <label>Data final</label>
-                  <Calendar
-                    v-model="filters.end_date"
-                    dateFormat="dd/mm/yy"
-                    showIcon
-                    class="w-full"
-                  />
-                </div>
+                        <div class="field field-end-date">
+                          <label>Data final</label>
+                          <Calendar
+                            v-model="filters.end_date"
+                            dateFormat="dd/mm/yy"
+                            showIcon
+                            class="w-full"
+                          />
+                        </div>
 
-                <div class="field filter-button">
-                  <label class="invisible-label">Filtrar</label>
-                  <Button
-                    label="Filtrar"
-                    icon="pi pi-filter"
-                    class="w-full"
-                    @click="loadOrders"
-                  />
-                </div>
-              </div>
+                        <!-- LINHA 2 -->
+                        <div class="field field-destination">
+                          <label>Destino</label>
+                          <AutoComplete
+                            v-model="filters.destination"
+                            :suggestions="citySuggestions"
+                            optionLabel="label"
+                            @complete="onCityComplete"
+                            placeholder="Buscar destino..."
+                            class="w-full"
+                            :minLength="2"
+                          />
+                        </div>
+
+                        <div class="field filter-button">
+                          <Button
+                            label="Filtrar"
+                            icon="pi pi-filter"
+                            class="filter-button-inner"
+                            @click="loadOrders"
+                          />
+                        </div>
+                  </div>
+                </template>
+              </Card>
 
               <!-- Loading -->
               <div v-if="loading" class="loading-area">
                 <ProgressBar mode="indeterminate" style="height: 4px" />
                 <span class="loading-text">Carregando pedidos...</span>
               </div>
+
 
               <!-- Tabela -->
               <DataTable
@@ -169,11 +193,17 @@
           >
             <div class="field">
               <label>Destino</label>
-              <InputText
+              <AutoComplete
                 v-model="form.destination"
+                :suggestions="citySuggestionsNewOrder"
+                optionLabel="label"
+                @complete="onCityCompleteNewOrder"
+                placeholder="Destino"
                 class="w-full"
+                :minLength="2"
               />
             </div>
+
 
             <div class="field">
               <label>Data de ida</label>
@@ -219,9 +249,9 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import api from '../services/api'
 import { formatDate } from '../utils/date'
-
-// Header novo
 import HeaderBar from './HeaderBar.vue'
+import airportCities from '../data/airportCitiesBr.json';
+
 
 // PrimeVue components
 import Button from 'primevue/button'
@@ -237,6 +267,12 @@ import ProgressBar from 'primevue/progressbar'
 
 // router para logout
 const router = useRouter()
+
+//Auto complete de cidades
+const citySuggestions = ref([]);
+
+// Auto complete de cidades no modal "Novo Pedido"
+const citySuggestionsNewOrder = ref([]);
 
 // ---------- USUÁRIO LOGADO / AVATAR ----------
 const currentUser = ref(null)
@@ -264,8 +300,9 @@ const orders = ref([])
 const showCreateModal = ref(false)
 
 const filters = ref({
-  status: '',
-  destination: '',
+  id: null,
+  status: null,
+  destination: null,
   start_date: null,
   end_date: null
 })
@@ -275,6 +312,47 @@ const form = ref({
   departure_date: null,
   return_date: null
 })
+
+const onCityComplete = (event) => {
+  const term = (event.query || '').toLowerCase().trim();
+
+  if (!term || term.length < 2) {
+    citySuggestions.value = [];
+    return;
+  }
+
+  citySuggestions.value = airportCities
+    .filter((item) => {
+      const text = `${item.city} ${item.state}`.toLowerCase();
+      return text.includes(term);
+    })
+    .slice(0, 15)
+    .map((item) => ({
+      label: `${item.city} - ${item.state}`,
+      value: item.city
+    }));
+};
+
+const onCityCompleteNewOrder = (event) => {
+  const term = (event.query || '').toLowerCase().trim();
+
+  if (!term || term.length < 2) {
+    citySuggestionsNewOrder.value = [];
+    return;
+  }
+
+  citySuggestionsNewOrder.value = airportCities
+    .filter((item) => {
+      const text = `${item.city} ${item.state}`.toLowerCase();
+      return text.includes(term);
+    })
+    .slice(0, 15)
+    .map((item) => ({
+      label: `${item.city} - ${item.state}`,
+      value: item.city
+    }));
+};
+
 
 // opções de status (para o filtro)
 const statusOptions = [
@@ -336,7 +414,9 @@ async function updateStatus(order, newStatus) {
 async function createOrder() {
   try {
     await api.post('/travel-orders', {
-      destination: form.value.destination,
+      destination: form.value.destination
+        ? form.value.destination.value
+        : '',
       departure_date: toApiDate(form.value.departure_date),
       return_date: toApiDate(form.value.return_date)
     })
@@ -347,6 +427,7 @@ async function createOrder() {
     console.error('Erro ao criar pedido:', error)
   }
 }
+
 
 function closeModal() {
   showCreateModal.value = false
@@ -364,8 +445,11 @@ async function loadOrders() {
 
     const response = await api.get('/travel-orders', {
       params: {
+        id: filters.value.id || undefined,
         status: filters.value.status || undefined,
-        destination: filters.value.destination || undefined,
+        destination: filters.value.destination
+                  ? filters.value.destination.value
+                  : undefined,
         start_date: toApiDate(filters.value.start_date),
         end_date: toApiDate(filters.value.end_date)
       }
@@ -420,19 +504,86 @@ onMounted(() => {
 
 .filters-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 1rem;
-  margin-bottom: 1.5rem;
+  grid-template-columns: repeat(4, minmax(0, 1fr)); /* 4 colunas iguais */
+  column-gap: 1rem;
+  row-gap: 1rem;
+  margin-bottom: 1.75rem;
+  align-items: end;
 }
+
+/* linha 1 – 4 colunas normais (ID, Status, Data inicial, Data final) */
+/* linha 2 – Destino grande + botão à direita */
+.field-destination {
+  grid-column: 1 / span 3;  /* ocupa 3 colunas (75%) */
+}
+
+.filter-button {
+  grid-column: 4 / span 1;
+  display: flex;
+  justify-content: flex-end !important;
+  align-items: center;
+  width: 100% !important;
+}
+
+.filter-button-inner {
+  width: auto;      /* deixa o botão com tamanho natural */
+  min-width: 150px; /* opcional – dá mais presença visual */
+}
+
+
+/* TELAS MÉDIAS (2 colunas) */
+@media (max-width: 992px) {
+  .filters-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .field-destination {
+    grid-column: 1 / span 2;
+  }
+
+  .filter-button {
+    grid-column: 1 / span 2;
+    justify-content: flex-start;
+  }
+
+  .filter-button-inner {
+    max-width: none;
+  }
+}
+
+/* TELAS PEQUENAS (1 coluna) */
+@media (max-width: 640px) {
+  .filters-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .field-destination,
+  .filter-button {
+    grid-column: auto;
+  }
+
+  .filter-button-inner {
+    width: 100%;
+  }
+}
+
+/* Forçar o AutoComplete do PrimeVue a ocupar toda a largura da célula */
+.field-destination :deep(.p-autocomplete) {
+  width: 100%;
+}
+
+/* E o input interno também */
+.field-destination :deep(.p-autocomplete-input),
+.field-destination :deep(.p-inputtext) {
+  width: 100%;
+  box-sizing: border-box;
+}
+
 
 .field {
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
-}
-
-.filter-button {
-  align-self: flex-end;
 }
 
 .invisible-label {
@@ -465,4 +616,6 @@ onMounted(() => {
 .w-full {
   width: 100%;
 }
+
+
 </style>

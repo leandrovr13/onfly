@@ -14,12 +14,11 @@ import Tag from 'primevue/tag';
 
 import 'primeicons/primeicons.css';
 import 'primeflex/primeflex.css';
-
-// Componentes que vamos usar agora
 import Button from 'primevue/button';
 import InputText from 'primevue/inputtext';
 import Password from 'primevue/password';
 import Card from 'primevue/card';
+import AutoComplete from 'primevue/autocomplete';
 
 const app = createApp(App);
 
@@ -34,10 +33,10 @@ app.use(PrimeVue, {
   },
 });
 
-// 🔹 Registro global dos componentes
+// Registro global dos componentes
 app.component('Button', Button);
 app.component('InputText', InputText);
 app.component('Password', Password);
 app.component('Card', Card);
-
+app.component('AutoComplete', AutoComplete);
 app.mount('#app');
