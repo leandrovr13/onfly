@@ -103,12 +103,23 @@ class TravelOrderController extends Controller
             return response()->json(['error' => 'Pedidos aprovados não podem ser cancelados.'], 422);
         }
 
+        // Guarda o status anterior
+        $oldStatus = $order->status;
+
         $order->status = $data['status'];
         $order->save();
 
-        $order->user->notify(new TravelOrderStatusChanged($order));
+        $newStatus = $order->status;
+
+        // Notifica apenas se realmente houve mudança
+        if ($newStatus !== $oldStatus) {
+            $order->user->notify(
+                new TravelOrderStatusChanged($order, $oldStatus, $newStatus)
+            );
+        }
 
         return response()->json($order->load('user'));
+
     }
 
 }

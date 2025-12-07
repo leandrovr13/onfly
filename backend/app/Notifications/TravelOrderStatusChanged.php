@@ -10,43 +10,31 @@ class TravelOrderStatusChanged extends Notification
 {
     use Queueable;
 
-    /**
-     * Pedido atualizado.
-     *
-     * @var TravelOrder
-     */
-    protected $order;
+    protected TravelOrder $travelOrder;
+    protected string $oldStatus;
+    protected string $newStatus;
 
-    /**
-     * Construtor padrão recebendo o pedido atualizado.
-     */
-    public function __construct(TravelOrder $order)
+    public function __construct(TravelOrder $travelOrder, string $oldStatus, string $newStatus)
     {
-        $this->order = $order;
+        $this->travelOrder = $travelOrder;
+        $this->oldStatus   = $oldStatus;
+        $this->newStatus   = $newStatus;
     }
 
-    /**
-     * Canais utilizados para a notificação.
-     */
-    public function via(object $notifiable): array
+    public function via($notifiable): array
     {
+        // Só banco por enquanto
         return ['database'];
     }
 
-    /**
-     * Representação da notificação para armazenamento no banco.
-     */
-    public function toDatabase(object $notifiable): array
+    public function toDatabase($notifiable): array
     {
         return [
-            'travel_order_id' => $this->order->id,
-            'destination'     => $this->order->destination,
-            'status'          => $this->order->status,
-            'message'         => sprintf(
-                'Seu pedido de viagem para %s foi %s.',
-                $this->order->destination,
-                $this->order->status
-            ),
+            'travel_order_id' => $this->travelOrder->id,
+            'old_status'      => $this->oldStatus,
+            'new_status'      => $this->newStatus,
+            'destination'     => $this->travelOrder->destination ?? null,
+            'requested_at'    => optional($this->travelOrder->created_at)->toDateTimeString(),
         ];
     }
 }

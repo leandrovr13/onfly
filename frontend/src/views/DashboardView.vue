@@ -4,8 +4,11 @@
     <HeaderBar
       :user-name="userName"
       :avatar-url="userAvatarUrl"
+      :notifications="notifications"
+      :notifications-loading="notificationsLoading"
       @logout="logout"
       @profile="goToProfile"
+      @open-notification="handleOpenNotification"
     />
 
     <!-- CONTEÚDO DO DASHBOARD -->
@@ -238,6 +241,104 @@
               />
             </template>
           </Dialog>
+
+          <Dialog
+            v-model:visible="showNotificationDialog"
+            modal
+            header="Detalhes da Notificação"
+            style="width: 32rem"
+          >
+            <div
+              v-if="selectedNotification"
+              :class="['notification-card', notificationVariantClass]"
+            >
+              <div class="notification-card-header">
+                <div class="notification-card-icon">
+                  <i
+                    v-if="selectedNotification.data.new_status === 'aprovado'"
+                    class="pi pi-check"
+                  />
+                  <i
+                    v-else-if="selectedNotification.data.new_status === 'cancelado'"
+                    class="pi pi-times"
+                  />
+                  <i
+                    v-else
+                    class="pi pi-info-circle"
+                  />
+                </div>
+
+                <div class="notification-card-title">
+                  <p class="notification-card-title-main">
+                    <span v-if="selectedNotification.data.new_status === 'aprovado'">
+                      Boa notícia!
+                    </span>
+                    <span v-else-if="selectedNotification.data.new_status === 'cancelado'">
+                      Aviso importante.
+                    </span>
+                    <span v-else>
+                      Atualização do pedido.
+                    </span>
+                  </p>
+                  <p class="notification-card-title-sub">
+                    Pedido #{{ selectedNotification.data.travel_order_id }}
+                  </p>
+                </div>
+              </div>
+
+              <div class="notification-card-body">
+                <p>
+                  O pedido
+                  <strong>#{{ selectedNotification.data.travel_order_id }}</strong>,
+                  com destino a
+                  <strong>{{ selectedNotification.data.destination }}</strong>,
+                  foi
+                  <strong>{{ selectedNotification.data.new_status }}</strong>.
+                </p>
+
+                <p
+                  v-if="selectedNotification.data.new_status === 'aprovado'"
+                  class="notification-card-message"
+                >
+                  Agora é só se preparar — sua viagem está oficialmente em andamento.
+                </p>
+
+                <p
+                  v-else-if="selectedNotification.data.new_status === 'cancelado'"
+                  class="notification-card-message"
+                >
+                  Se quiser ajustar alguma informação ou criar um novo pedido,
+                  pode contar com a gente.
+                </p>
+              </div>
+
+              <div class="notification-card-meta">
+                <div>
+                  <span class="meta-label">Solicitado em</span>
+                  <span class="meta-value">
+                    {{ selectedNotification.data.requested_at }}
+                  </span>
+                </div>
+                <div>
+                  <span class="meta-label">Notificado em</span>
+                  <span class="meta-value">
+                    {{ new Date(selectedNotification.created_at).toLocaleString('pt-BR') }}
+                  </span>
+                </div>
+              </div>
+
+              <div class="notification-card-footer">
+                <Button
+                  label="Fechar"
+                  severity="secondary"
+                  @click="closeNotificationDialog"
+                />
+              </div>
+            </div>
+          </Dialog>
+
+
+
         </div>
       </div>
     </div>
@@ -299,6 +400,12 @@ const loading = ref(false)
 const orders = ref([])
 const showCreateModal = ref(false)
 
+const notifications = ref([])
+const notificationsLoading = ref(false)
+
+const selectedNotification = ref(null)
+const showNotificationDialog = ref(false)
+
 const filters = ref({
   id: null,
   status: null,
@@ -311,6 +418,22 @@ const form = ref({
   destination: '',
   departure_date: null,
   return_date: null
+})
+
+const notificationVariantClass = computed(() => {
+  if (!selectedNotification.value) return ''
+
+  const status = selectedNotification.value.data.new_status
+
+  if (status === 'aprovado') {
+    return 'notification-card--success'
+  }
+
+  if (status === 'cancelado') {
+    return 'notification-card--danger'
+  }
+
+  return ''
 })
 
 const onCityComplete = (event) => {
@@ -399,6 +522,22 @@ function toApiDate(date) {
   return `${year}-${month}-${day}`
 }
 
+async function handleOpenNotification(notification) {
+  selectedNotification.value = notification
+  showNotificationDialog.value = true
+
+  if (!notification.read_at) {
+    await markNotificationAsRead(notification)
+  }
+}
+
+
+function closeNotificationDialog() {
+  showNotificationDialog.value = false
+  selectedNotification.value = null
+}
+
+
 async function updateStatus(order, newStatus) {
   try {
     await api.patch(`/travel-orders/${order.id}/status`, {
@@ -425,6 +564,27 @@ async function createOrder() {
     await loadOrders()
   } catch (error) {
     console.error('Erro ao criar pedido:', error)
+  }
+}
+
+async function loadNotifications() {
+  notificationsLoading.value = true
+  try {
+    const { data } = await api.get('/notifications')
+    notifications.value = data
+  } catch (error) {
+    console.error('Erro ao carregar notificações', error)
+  } finally {
+    notificationsLoading.value = false
+  }
+}
+
+async function markNotificationAsRead(notification) {
+  try {
+    await api.post(`/notifications/${notification.id}/read`)
+    notification.read_at = new Date().toISOString()
+  } catch (error) {
+    console.error('Erro ao marcar notificação como lida', error)
   }
 }
 
@@ -478,7 +638,9 @@ function goToProfile() {
 // ao abrir a página, carrega os pedidos
 onMounted(() => {
   loadOrders()
+  loadNotifications()
 })
+
 </script>
 
 <style scoped>
@@ -615,6 +777,104 @@ onMounted(() => {
 
 .w-full {
   width: 100%;
+}
+
+.notification-card {
+  background: #111827;
+  border-radius: 0.75rem;
+  border: 1px solid #374151;
+  padding: 1.2rem 1.4rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.45);
+}
+
+/* faixa superior de cor, de acordo com o status */
+.notification-card--success {
+  border-top: 4px solid #16a34a;
+}
+
+.notification-card--danger {
+  border-top: 4px solid #ef4444;
+}
+
+.notification-card-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.notification-card-icon {
+  width: 2.4rem;
+  height: 2.4rem;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(55, 65, 81, 0.7);
+  flex-shrink: 0;
+}
+
+.notification-card--success .notification-card-icon {
+  background: rgba(22, 163, 74, 0.15);
+  color: #4ade80;
+}
+
+.notification-card--danger .notification-card-icon {
+  background: rgba(239, 68, 68, 0.15);
+  color: #fca5a5;
+}
+
+.notification-card-title-main {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #e5e7eb;
+}
+
+.notification-card-title-sub {
+  margin: 0;
+  font-size: 0.85rem;
+  color: #9ca3af;
+}
+
+.notification-card-body {
+  font-size: 0.9rem;
+  color: #e5e7eb;
+}
+
+.notification-card-message {
+  margin-top: 0.5rem;
+  color: #d1d5db;
+}
+
+.notification-card-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  font-size: 0.8rem;
+  color: #9ca3af;
+  border-top: 1px solid #1f2933;
+  padding-top: 0.75rem;
+}
+
+.meta-label {
+  display: block;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #6b7280;
+}
+
+.meta-value {
+  display: block;
+  margin-top: 0.15rem;
+}
+
+.notification-card-footer {
+  margin-top: 0.5rem;
+  text-align: right;
 }
 
 

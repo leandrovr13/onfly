@@ -21,6 +21,14 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/notifications', function (Request $request) {
         return $request->user()->notifications()->orderByDesc('created_at')->get();
     });
+    
+    Route::post('/notifications/{id}/read', function (Request $request, $id) {
+        $notification = $request->user()->notifications()->where('id', $id)->firstOrFail();
+        $notification->markAsRead();
+
+        return response()->json(['status' => 'ok']);
+    });
+
 
     // Travel orders
     Route::get('/travel-orders', [TravelOrderController::class, 'index']);
