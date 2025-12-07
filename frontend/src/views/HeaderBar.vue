@@ -431,4 +431,48 @@ html.app-dark .logo-icon {
   filter: brightness(0) invert(1);
 }
 
+
+
+/* ======================
+   AJUSTES PARA MOBILE
+   ====================== */
+@media (max-width: 768px) {
+  .titles {
+    display: none;            /* some "Onfly Travel Orders" + subtítulo */
+  }
+
+  .greeting {
+    display: none;            /* some "Olá, Admin Onfly" */
+  }
+
+  .header {
+    padding: 0.75rem 1rem;    /* dá uma enxugada no padding lateral */
+  }
+
+  .right {
+    gap: 0.5rem;              /* diminui espaços entre ícones */
+  }
+}
+
+
+.avatar {
+  background: #4ade80;
+  color: #1f1f1f;
+  border: 2px solid #333;
+  width: 40px;
+  height: 40px;
+  border-radius: 50% !important;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+/* Garantir que a imagem preencha o círculo sem distorcer */
+:deep(.avatar img) {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+  object-position: center !important;
+}
+
+
 </style>

@@ -280,28 +280,44 @@ function goToDashboard() {
   text-align: center;
 }
 
-.profile-avatar {
-  margin: 0 auto 1.5rem auto;
-  border: 3px solid #444;
-  display: block;
-}
-
 .text-muted {
   font-size: 0.8rem;
   opacity: 0.7;
 }
 
-.profile-avatar img {
-  object-fit: cover !important;
-  object-position: center !important;
-  width: 100% !important;
-  height: 100% !important;
+
+.profile-avatar {
+  margin: 0 auto 1.5rem auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  /* garante círculo perfeito */
+  width: 80px;
+  height: 80px;
+  border-radius: 50% !important;
+
+  border: 3px solid #444;
+  overflow: hidden; /* nada “escapa” do círculo */
 }
-::v-deep(.profile-avatar img) {
-  object-fit: cover !important;
-  object-position: center !important;
+
+/* Quando tiver FOTO, ela preenche o círculo sem distorcer */
+:deep(.profile-avatar img) {
   width: 100% !important;
   height: 100% !important;
+  object-fit: cover !important;
+  object-position: center !important;
+}
+
+/* Quando NÃO tiver foto, centraliza e dimensiona as INICIAIS */
+:deep(.profile-avatar .p-avatar-text) {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.7rem;
+  font-weight: 600;
 }
 
 </style>

@@ -169,7 +169,7 @@
                         icon="pi pi-check"
                         size="small"
                         class="btn-approve"
-                        @click="updateStatus(data, 'aprovado')"
+                        @click="openStatusConfirm(data, 'aprovado')"
                       />
 
                       <Button
@@ -177,10 +177,10 @@
                         icon="pi pi-times"
                         size="small"
                         class="btn-cancel"
-                        @click="updateStatus(data, 'cancelado')"
+                        @click="openStatusConfirm(data, 'cancelado')"
                       />
-
                     </div>
+
 
                     <Button
                       v-else
@@ -386,6 +386,51 @@
             </template>
           </Dialog>
 
+          <!-- Modal de confirmação de mudança de status -->
+          <Dialog
+            v-model:visible="showStatusConfirmDialog"
+            :modal="true"
+            :style="{ width: '26rem' }"
+          >
+            <template #header>
+              <span>
+                {{ isConfirmingApproval ? 'Confirmar aprovação' : 'Confirmar cancelamento' }}
+              </span>
+            </template>
+
+            <div class="status-confirm-body">
+              <p class="status-confirm-main">
+                {{ isConfirmingApproval
+                  ? 'Quer mesmo aprovar este pedido de viagem?'
+                  : 'Quer mesmo cancelar este pedido de viagem?' }}
+              </p>
+
+              <p v-if="statusConfirmOrder" class="status-confirm-details">
+                Pedido #{{ statusConfirmOrder.id }}
+                <span v-if="statusConfirmOrder.destination">
+                  – {{ statusConfirmOrder.destination }}
+                </span>
+              </p>
+
+              <p class="status-confirm-warning">
+                * Essa operação é irreversível.
+              </p>
+            </div>
+
+            <template #footer>
+              <Button
+                label="Voltar"
+                severity="secondary"
+                @click="cancelStatusConfirmation"
+              />
+              <Button
+                :label="isConfirmingApproval ? 'Aprovar' : 'Cancelar Pedido'"
+                :severity="isConfirmingApproval ? 'success' : 'danger'"
+                @click="confirmStatusChange"
+              />
+            </template>
+          </Dialog>
+
 
           <!-- Modal de notificações -->
           <div v-if="selectedNotification" class="modal-backdrop">
@@ -480,6 +525,14 @@ const lastCreatedOrder = ref(null);
 
 const showOrderDetailsDialog = ref(false)
 const orderDetails = ref(null)
+
+//Modal de confirmação de status
+const showStatusConfirmDialog = ref(false)
+const statusToConfirm = ref(null)      // 'aprovado' ou 'cancelado'
+const statusConfirmOrder = ref(null)   // pedido selecionado
+const isConfirmingApproval = computed(() => statusToConfirm.value === 'aprovado')
+
+
 
 // ---------- USUÁRIO LOGADO / AVATAR ----------
 const currentUser = ref(null)
@@ -811,6 +864,33 @@ async function updateStatus(order, newStatus) {
     console.error('Erro ao atualizar status', error)
   }
 }
+
+function openStatusConfirm(order, newStatus) {
+  statusConfirmOrder.value = order
+  statusToConfirm.value = newStatus
+  showStatusConfirmDialog.value = true
+}
+
+function cancelStatusConfirmation() {
+  showStatusConfirmDialog.value = false
+  statusConfirmOrder.value = null
+  statusToConfirm.value = null
+}
+
+async function confirmStatusChange() {
+  if (!statusConfirmOrder.value || !statusToConfirm.value) {
+    cancelStatusConfirmation()
+    return
+  }
+
+  try {
+    await updateStatus(statusConfirmOrder.value, statusToConfirm.value)
+  } finally {
+    // seja sucesso ou erro, fechamos o modal
+    cancelStatusConfirmation()
+  }
+}
+
 
 
 async function createOrder() {
@@ -1597,6 +1677,35 @@ html.app-dark .order-details-row .value {
   background-color: #d9e9ff !important;
   border-color: #3b6fb0 !important;
   color: #1f3352 !important;
+}
+
+
+.status-confirm-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+}
+
+.status-confirm-main {
+  margin: 0;
+  font-weight: 600;
+}
+
+.status-confirm-details {
+  margin: 0;
+  opacity: 0.85;
+}
+
+.status-confirm-warning {
+  margin: 0.3rem 0 0;
+  font-size: 0.85rem;
+  color: #b45309; /* tom de alerta suave */
+}
+
+/* Versão dark */
+html.app-dark .status-confirm-warning {
+  color: #fbbf24;
 }
 
 
