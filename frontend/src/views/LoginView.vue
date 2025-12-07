@@ -91,15 +91,18 @@ async function login() {
 </script>
 
 <style scoped>
-
-
 .login-page {
   min-height: 100vh;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #111; /* mantém o clima dark do seu app */
   padding: 1.5rem;
+  background: #f3f4f6; /* fundo claro padrão */
+}
+
+/* Quando o tema dark estiver ativo (classe app-dark no <html>) */
+:global(html.app-dark) .login-page {
+  background: #111; /* fundo escuro só no tema dark */
 }
 
 .login-card {
@@ -136,11 +139,48 @@ async function login() {
 .actions {
   display: flex;
   justify-content: flex-end;
-  margin-top: 0.5rem;
+  margin-top: 0.75rem;
 }
 
 .error-message {
+  margin-top: 0.25rem;
   color: #ff6b6b;
   font-size: 0.85rem;
 }
+
+/* Footer "Ainda não tem conta? Cadastre-se" bem alinhado */
+.login-footer {
+  margin-top: 1.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+}
+
+/* Ajuste fino no botão link do PrimeVue dentro do footer */
+:deep(.login-footer .p-button.p-button-link) {
+  padding: 0;
+  height: auto;
+  line-height: 1;
+}
+
+
+/* Transformar o botão 'Cadastre-se' em link real, sem fundo */
+:deep(.login-footer .p-button.p-button-link) {
+  background: none !important;
+  color: #1a6ca5 !important; /* azul institucional da Onfly */
+  padding: 0 !important;
+  box-shadow: none !important;
+  border: none !important;
+  font-weight: 600;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+/* No tema escuro, deixe o link em azul claro para boa leitura */
+:global(html.app-dark) .login-footer .p-button.p-button-link {
+  color: #7dc1ff !important;
+}
+
 </style>

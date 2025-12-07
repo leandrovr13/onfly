@@ -18,3 +18,205 @@
   margin: 0 auto;
   padding: 2rem;
 }
+
+/* ============================
+   HEADER – VARIÁVEIS POR TEMA
+   ============================ */
+
+/* Tema CLARO */
+html:not(.app-dark) {
+  --header-bg-color: #1a6ca5;                 /* azul bebê */
+  --header-border-color: rgba(0, 0, 0, 0.05);
+  --header-text-color: #f9fafb;               /* azul marinho / slate bem legível */
+  --header-icon-color: #f9fafb;               /* mesma cor pros ícones */
+}
+
+/* Tema ESCURO */
+html.app-dark {
+  --header-bg-color: #1f1f1f;
+  --header-border-color: #2c2c2c;
+  --header-text-color: #f9fafb;               /* quase branco */
+  --header-icon-color: #f9fafb;
+}
+
+/* ============================
+   BOTÕES PRIMÁRIOS – VARIÁVEIS POR TEMA
+   ============================ */
+
+/* Tema CLARO */
+html:not(.app-dark) {
+  --primary-button-bg: #1a6ca5;        /* MESMO azul do header */
+  --primary-button-hover-bg: #165a88;
+  --primary-button-focus-ring: rgba(26, 108, 165, 0.35);
+  --primary-button-text: #ffffff;
+}
+
+/* Tema ESCURO */
+html.app-dark {
+  --primary-button-bg: rgba(26, 108, 165, 0.35);          /* grafite fosco */
+  --primary-button-hover-bg: #3a3f46;    /* hover um tom acima */
+  --primary-button-focus-ring: rgba(90, 94, 100, 0.45);
+  --primary-button-text: #e5e7eb;        /* quase branco, elegante */
+
+  /* Ajustes para header */
+  --header-bg-color: #1f1f1f;
+  --header-border-color: #2c2c2c;
+  --header-text-color: #e5e7eb;          /* texto clarinho */
+  --header-icon-color: #e5e7eb;
+}
+
+
+/* Aplicar as variáveis nos botões PrimeVue */
+.p-button,
+.p-button.p-component {
+  background: var(--primary-button-bg) !important;
+  border-color: var(--primary-button-bg) !important;
+  color: var(--primary-button-text) !important;
+}
+
+/* Hover */
+.p-button:hover,
+.p-button.p-component:hover {
+  background: var(--primary-button-hover-bg) !important;
+  border-color: var(--primary-button-hover-bg) !important;
+}
+
+/* Focus ring */
+.p-button:focus,
+.p-button.p-component:focus {
+  box-shadow: 0 0 0 3px var(--primary-button-focus-ring) !important;
+}
+
+/* Hover de botões de ícone no header - Tema escuro */
+html.app-dark .header .p-button.p-button-text:hover {
+  background-color: rgba(255, 255, 255, 0.06) !important;
+}
+
+html.app-dark .header .p-button.p-button-text .p-button-icon {
+  color: var(--header-icon-color) !important;
+}
+
+
+/* ============================
+   DROPDOWN COLORS BY THEME
+   ============================ */
+
+/* ===== Tema claro ===== */
+html:not(.app-dark) {
+  --dropdown-bg: #ffffff;
+  --dropdown-border: rgba(0, 0, 0, 0.12);
+  --dropdown-item-hover-bg: rgba(0, 0, 0, 0.04);
+  --dropdown-text-color: #0f172a; /* azul-marinho */
+}
+
+/* ===== Tema escuro ===== */
+html.app-dark {
+  --dropdown-bg: #1f2429;            /* grafite / dark slate */
+  --dropdown-border: #2c2f33;
+  --dropdown-item-hover-bg: #2a2f35; /* hover um tom acima */
+  --dropdown-text-color: #e5e7eb;    /* cinza claro */
+}
+
+
+/* ============================
+   ESTILOS GLOBAIS PARA MENUS
+   ============================ */
+
+/* Fundo e borda do dropdown */
+.p-menu,
+.p-overlaypanel,
+.p-menu .p-menu-list,
+.p-overlaypanel .p-menu-list {
+  background: var(--dropdown-bg) !important;
+  border: 1px solid var(--dropdown-border) !important;
+  color: var(--dropdown-text-color) !important;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.2) !important;
+  backdrop-filter: blur(4px);
+}
+
+/* Itens */
+.p-menuitem-link {
+  color: var(--dropdown-text-color) !important;
+  border-radius: 6px !important;
+}
+
+/* Hover */
+.p-menuitem-link:hover {
+  background: var(--dropdown-item-hover-bg) !important;
+}
+
+/* Texto dos itens */
+.p-menuitem-text,
+.p-menuitem-icon {
+  color: var(--dropdown-text-color) !important;
+}
+
+/* Divider */
+.p-divider {
+  border-color: var(--dropdown-border) !important;
+}
+
+
+
+/* ============================
+   DROPDOWN – VARIÁVEIS POR TEMA
+   ============================ */
+
+/* Tema CLARO */
+html:not(.app-dark) {
+  --dropdown-bg: #ffffff;
+  --dropdown-border: rgba(0, 0, 0, 0.12);
+  --dropdown-item-hover-bg: rgba(15, 23, 42, 0.06);
+
+  --dropdown-title-color: #0f172a;     /* título mais forte */
+  --dropdown-subtitle-color: #4b5563;  /* cinza médio */
+  --dropdown-meta-color: #6b7280;      /* cinza mais suave */
+}
+
+/* Tema ESCURO */
+html.app-dark {
+  --dropdown-bg: #111827;
+  --dropdown-border: #374151;
+  --dropdown-item-hover-bg: #1f2937;
+
+  --dropdown-title-color: #e5e7eb;
+  --dropdown-subtitle-color: #9ca3af;
+  --dropdown-meta-color: #6b7280;
+}
+
+
+/* ============================
+   MODAL – VARIÁVEIS POR TEMA
+   ============================ */
+
+/* Tema claro */
+html:not(.app-dark) {
+  --modal-bg: #ffffff;
+  --modal-text: #0f172a;
+  --modal-subtle-text: #475569;
+  --modal-border: rgba(0, 0, 0, 0.08);
+  --modal-card-bg: #f8fafc;
+}
+
+/* Tema escuro */
+html.app-dark {
+  --modal-bg: #1a1f25;
+  --modal-text: #f1f5f9;
+  --modal-subtle-text: #9ca3af;
+  --modal-border: #2a2f35;
+  --modal-card-bg: #111827;
+}
+
+
+
+
+/* ------------------------------
+   Ícone da maleta - cores do tema
+--------------------------------*/
+html {
+  --logo-icon-color: #2563EB; /* azul corporativo no tema claro */
+}
+
+html.app-dark {
+  --logo-icon-color: #60A5FA; /* slate azulado no tema escuro */
+}
