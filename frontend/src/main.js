@@ -5,7 +5,8 @@ import router from './router';
 
 import PrimeVue from 'primevue/config';
 import Aura from '@primeuix/themes/aura';
-
+import ToastService from 'primevue/toastservice'
+import Toast from 'primevue/toast';  
 import DataTable from 'primevue/datatable';
 import Column from 'primevue/column';
 import Dropdown from 'primevue/dropdown';
@@ -74,6 +75,8 @@ app.use(PrimeVue, {
   locale: primeLocalePtBR,
 });
 
+app.use(ToastService);
+
 // Registro global dos componentes
 app.component('Button', Button);
 app.component('InputText', InputText);
@@ -87,5 +90,6 @@ app.component('Dialog', Dialog);
 app.component('Calendar', Calendar);
 app.component('Tag', Tag);
 app.component('Message', Message);
+app.component('Toast', Toast);
 
 app.mount('#app');

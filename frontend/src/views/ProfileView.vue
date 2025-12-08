@@ -1,5 +1,7 @@
 <template>
   <div class="auth-page">
+    <Toast />
+
     <Card class="auth-card">
       <template #title>
         <div class="auth-header">
@@ -56,7 +58,9 @@
                 @keypress="allowOnlyNumbers"
                 @input="maskPhone"
             />
-
+            <small v-if="fieldErrors.phone" class="error-text">
+              {{ fieldErrors.phone }}
+            </small>
           </div>
 
           <div class="field">
@@ -75,6 +79,9 @@
             <small class="text-muted">
               Deixe em branco se não quiser alterar a senha.
             </small>
+            <small v-if="fieldErrors.password" class="error-text">
+              {{ fieldErrors.password }}
+            </small>
           </div>
 
           <div class="field">
@@ -85,6 +92,9 @@
               toggleMask
               class="w-full"
             />
+            <small v-if="fieldErrors.password_confirmation" class="error-text">
+              {{ fieldErrors.password_confirmation }}
+            </small>
           </div>
 
           <Button
@@ -120,8 +130,10 @@ import Button from 'primevue/button'
 import InputText from 'primevue/inputtext'
 import Password from 'primevue/password'
 import Avatar from 'primevue/avatar'
+import { useToast } from 'primevue/usetoast'
 
 const router = useRouter()
+const toast = useToast()
 
 const loading = ref(false)
 const avatarPreviewUrl = ref(null)
@@ -133,6 +145,12 @@ const form = ref({
   phone: '',
   password: '',
   password_confirmation: '',
+})
+
+const fieldErrors = ref({
+  phone: '',
+  password: '',
+  password_confirmation: ''
 })
 
 onMounted(() => {
@@ -164,12 +182,51 @@ function onPhotoChange(event) {
   if (!file) return
 
   photoFile.value = file
-
-  // preview local
   avatarPreviewUrl.value = URL.createObjectURL(file)
 }
 
+function clearFieldErrors() {
+  fieldErrors.value.phone = ''
+  fieldErrors.value.password = ''
+  fieldErrors.value.password_confirmation = ''
+}
+
 async function handleUpdate() {
+  clearFieldErrors()
+
+  const hasPassword = !!form.value.password
+  const hasConfirmation = !!form.value.password_confirmation
+
+   // Telefone opcional, mas se preenchido precisa ser válido
+  if (form.value.phone) {
+    const numeric = form.value.phone.replace(/\D/g, '')
+
+    // Aceita 10 dígitos (fixo) ou 11 (celular)
+    if (numeric.length !== 10 && numeric.length !== 11) {
+      fieldErrors.value.phone = 'Informe um telefone válido com DDD (10 ou 11 dígitos).'
+      return
+    }
+  }
+
+  // Só um dos campos preenchido
+  if ((hasPassword && !hasConfirmation) || (!hasPassword && hasConfirmation)) {
+    fieldErrors.value.password = 'Preencha os dois campos para alterar a senha.'
+    fieldErrors.value.password_confirmation = 'Preencha os dois campos para alterar a senha.'
+    return
+  }
+
+  // Ambos preenchidos, mas diferentes
+  if (hasPassword && hasConfirmation && form.value.password !== form.value.password_confirmation) {
+    fieldErrors.value.password_confirmation = 'A confirmação de senha não confere.'
+    return
+  }
+
+  // Tamanho mínimo alinhado com o backend
+  if (hasPassword && form.value.password.length < 8) {
+    fieldErrors.value.password = 'A nova senha deve ter pelo menos 8 caracteres.'
+    return
+  }
+
   try {
     loading.value = true
 
@@ -178,7 +235,7 @@ async function handleUpdate() {
     data.append('phone', form.value.phone)
     data.append('email', form.value.email)
 
-    if (form.value.password) {
+    if (hasPassword) {
       data.append('password', form.value.password)
       data.append('password_confirmation', form.value.password_confirmation)
     }
@@ -192,53 +249,86 @@ async function handleUpdate() {
     })
 
     localStorage.setItem('user', JSON.stringify(response.data.user))
-
     avatarPreviewUrl.value = response.data.user.avatar_url
 
-    alert("Dados atualizados com sucesso!")
+    toast.add({
+      severity: 'success',
+      summary: 'Perfil atualizado',
+      detail: 'Seus dados foram salvos com sucesso.',
+      life: 3000
+    })
   } catch (error) {
     console.error(error)
-    alert("Erro ao atualizar perfil.")
+
+    // Erros de validação vindos do backend
+    if (error.response && error.response.status === 422 && error.response.data?.errors) {
+      const errors = error.response.data.errors
+
+      if (errors.password?.length) {
+        fieldErrors.value.password = errors.password[0]
+      }
+      if (errors.password_confirmation?.length) {
+        fieldErrors.value.password_confirmation = errors.password_confirmation[0]
+      }
+
+      toast.add({
+        severity: 'error',
+        summary: 'Erro de validação',
+        detail: 'Verifique os campos destacados.',
+        life: 4000
+      })
+    } else {
+      toast.add({
+        severity: 'error',
+        summary: 'Erro ao atualizar',
+        detail: 'Não foi possível atualizar o perfil. Tente novamente mais tarde.',
+        life: 4000
+      })
+    }
   } finally {
     loading.value = false
   }
 }
 
 function maskPhone(e) {
-  let v = e.target.value;
+  let v = e.target.value
 
-  // remove tudo que não for número
-  v = v.replace(/\D/g, '');
+  // remove não numéricos
+  v = v.replace(/\D/g, '')
 
-  // garante máximo de 11 dígitos
-  v = v.substring(0, 11);
+  // máximo 11 dígitos
+  v = v.substring(0, 11)
 
-  // formatação "(XX) XXXXX-XXXX"
-  if (v.length >= 1) v = v.replace(/^(\d{0,2})/, '($1');
-  if (v.length >= 3) v = v.replace(/^(\(\d{2})(\d)/, '$1) $2');
-  if (v.length >= 8) v = v.replace(/(\d{5})(\d)/, '$1-$2');
+  if (v.length <= 10) {
+    // fixo: (XX) XXXX-XXXX
+    if (v.length >= 1) v = v.replace(/^(\d{0,2})/, '($1')
+    if (v.length >= 3) v = v.replace(/^(\(\d{2})(\d)/, '$1) $2')
+    if (v.length >= 7) v = v.replace(/(\d{4})(\d)/, '$1-$2')
+  } else {
+    // celular: (XX) XXXXX-XXXX
+    if (v.length >= 1) v = v.replace(/^(\d{0,2})/, '($1')
+    if (v.length >= 3) v = v.replace(/^(\(\d{2})(\d)/, '$1) $2')
+    if (v.length >= 8) v = v.replace(/(\d{5})(\d)/, '$1-$2')
+  }
 
-  form.value.phone = v;
+  form.value.phone = v
 }
+
 
 function allowOnlyNumbers(e) {
-  const char = String.fromCharCode(e.which);
+  const char = String.fromCharCode(e.which)
 
-  // Bloqueia tudo que não for número
   if (!/[0-9]/.test(char)) {
-    e.preventDefault();
-    return;
+    e.preventDefault()
+    return
   }
 
-  // Captura somente os números já digitados
-  const numeric = form.value.phone.replace(/\D/g, '');
+  const numeric = form.value.phone.replace(/\D/g, '')
 
-  // Se já tiver 11 dígitos → não deixa digitar mais nada
   if (numeric.length >= 11) {
-    e.preventDefault();
+    e.preventDefault()
   }
 }
-
 
 function goToDashboard() {
   router.push('/dashboard')
@@ -285,6 +375,12 @@ function goToDashboard() {
   opacity: 0.7;
 }
 
+.error-text {
+  font-size: 0.8rem;
+  color: #f44336; /* vermelho Prime-like */
+}
+
+/* Avatar */
 
 .profile-avatar {
   margin: 0 auto 1.5rem auto;
@@ -292,16 +388,14 @@ function goToDashboard() {
   align-items: center;
   justify-content: center;
 
-  /* garante círculo perfeito */
   width: 80px;
   height: 80px;
   border-radius: 50% !important;
 
   border: 3px solid #444;
-  overflow: hidden; /* nada “escapa” do círculo */
+  overflow: hidden;
 }
 
-/* Quando tiver FOTO, ela preenche o círculo sem distorcer */
 :deep(.profile-avatar img) {
   width: 100% !important;
   height: 100% !important;
@@ -309,7 +403,6 @@ function goToDashboard() {
   object-position: center !important;
 }
 
-/* Quando NÃO tiver foto, centraliza e dimensiona as INICIAIS */
 :deep(.profile-avatar .p-avatar-text) {
   width: 100%;
   height: 100%;
@@ -319,5 +412,4 @@ function goToDashboard() {
   font-size: 1.7rem;
   font-weight: 600;
 }
-
 </style>
