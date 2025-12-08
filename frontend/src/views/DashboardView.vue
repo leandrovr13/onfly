@@ -31,169 +31,35 @@
 
             <template #content>
               <!-- Bloco de Filtros -->
-              <Card class="filters-card">
-                <template #title>
-                  <span class="filters-title">Filtros</span>
-                </template>
-                <template #content>
-                  <div class="filters-grid">
-                        <!-- LINHA 1 -->
-                        <div class="field field-id">
-                          <label>ID do Pedido</label>
-                          <InputText
-                            v-model="filters.id"
-                            class="w-full"
-                            type="number"
-                            min="1"
-                            placeholder="Ex: 5"
-                          />
-                        </div>
+              <OrdersFilterBar
+                :filters="filters"
+                :status-options="statusOptions"
+                :city-suggestions="citySuggestions"
+                @filter="loadOrders"
+                @complete-city="onCityComplete"
+                @focus-destination="openFilterDestinationSuggestions"
+              />
 
-                        <div class="field field-status">
-                          <label>Status</label>
-                          <Dropdown
-                            v-model="filters.status"
-                            :options="statusOptions"
-                            optionLabel="label"
-                            optionValue="value"
-                            placeholder="Todos"
-                            showClear
-                            class="w-full"
-                          />
-                        </div>
-
-                        <div class="field field-start-date">
-                          <label>Data inicial</label>
-                          <Calendar
-                            v-model="filters.start_date"
-                            dateFormat="dd/mm/yy"
-                            showIcon
-                            class="w-full"
-                          />
-                        </div>
-
-                        <div class="field field-end-date">
-                          <label>Data final</label>
-                          <Calendar
-                            v-model="filters.end_date"
-                            dateFormat="dd/mm/yy"
-                            showIcon
-                            class="w-full"
-                          />
-                        </div>
-
-                        <!-- LINHA 2 -->
-                         <div class="field field-destination">
-                          <label>Destino</label>
-                          <AutoComplete
-                            ref="filterDestinationAC"
-                            v-model="filters.destination"
-                            :suggestions="citySuggestions"
-                            optionLabel="label"
-                            @complete="onCityComplete"
-                            placeholder="Buscar destino..."
-                            class="w-full"
-                            :minLength="0"
-                            :inputProps="{ onFocus: openFilterDestinationSuggestions }"
-                          />
-
-                        </div>
-
-                        <div class="field filter-button">
-                          <Button
-                            label="Filtrar"
-                            icon="pi pi-filter"
-                            class="filter-button-inner"
-                            @click="loadOrders"
-                          />
-                        </div>
-                  </div>
-                </template>
-              </Card>
-
-              <!-- Loading -->
+             <!-- Loading -->
               <div v-if="loading" class="loading-area">
                 <ProgressBar mode="indeterminate" style="height: 4px" />
                 <span class="loading-text">Carregando pedidos...</span>
               </div>
 
-
               <!-- Tabela -->
-              <DataTable
+              <OrdersTable
                 v-else
-                :value="orders"
-                dataKey="id"
-                responsiveLayout="scroll"
-                class="mt-3"
-              >
-                <Column field="id" header="ID" style="width: 80px" />
-
-                <Column field="destination" header="Destino" />
-
-                <Column header="Data Ida">
-                  <template #body="{ data }">
-                    {{ formatDate(data.departure_date) }}
-                  </template>
-                </Column>
-
-                <Column header="Data Volta">
-                  <template #body="{ data }">
-                    {{ formatDate(data.return_date) }}
-                  </template>
-                </Column>
-
-                <Column header="Status">
-                  <template #body="{ data }">
-                    <Tag
-                      :value="statusLabel(data.status)"
-                      :severity="statusSeverity(data.status)"
-                    />
-                  </template>
-                </Column>
-
-                <Column header="Solicitado por">
-                  <template #body="{ data }">
-                    {{ data.user?.name ?? '-' }}
-                  </template>
-                </Column>
-
-                <Column
-                  v-if="isAdmin"
-                  header="Ações"
-                  style="width: 230px"
-                >
-                  <template #body="{ data }">
-                    <div v-if="data.status === 'solicitado'" class="actions-cell">
-                      <Button
-                        label="Aprovar"
-                        icon="pi pi-check"
-                        size="small"
-                        class="btn-approve"
-                        @click="openStatusConfirm(data, 'aprovado')"
-                      />
-
-                      <Button
-                        label="Cancelar"
-                        icon="pi pi-times"
-                        size="small"
-                        class="btn-cancel"
-                        @click="openStatusConfirm(data, 'cancelado')"
-                      />
-                    </div>
+                :orders="orders"
+                :is-admin="isAdmin"
+                :status-label="statusLabel"
+                :status-severity="statusSeverity"
+                :format-date="formatDate"
+                @details="openOrderDetails"
+                @approve="order => openStatusConfirm(order, 'aprovado')"
+                @cancel="order => openStatusConfirm(order, 'cancelado')"
+              />
 
 
-                    <Button
-                      v-else
-                      label="Detalhes"
-                      icon="pi pi-search"
-                      size="small"
-                      class="btn-button-details"
-                      @click="openOrderDetails(data)"
-                    />
-
-                  </template>
-                </Column>
-              </DataTable>
             </template>
           </Card>
 
@@ -433,55 +299,10 @@
 
 
           <!-- Modal de notificações -->
-          <div v-if="selectedNotification" class="modal-backdrop">
-            <div class="modal-window">
-              <!-- Cabeçalho -->
-              <div class="modal-header">
-                <span>Detalhes da Notificação</span>
-                <button class="modal-close-btn" @click="selectedNotification = null">
-                  ✕
-                </button>
-              </div>
-
-              <!-- Corpo -->
-              <div class="modal-body">
-                <div class="notification-card" :class="notificationVariantClass">
-                  <div class="notification-card-header">
-                    <div class="notification-card-icon-wrapper">
-                      <i
-                        class="notification-card-icon pi"
-                        :class="isApprovedNotification ? 'pi-check' : 'pi-times'"
-                      ></i>
-                    </div>
-
-                    <div class="notification-card-header-texts">
-                      <div class="notification-card-title">
-                        {{ notificationTitle }}
-                      </div>
-                      <div class="notification-card-subtitle">
-                        Pedido #{{ selectedNotification.data.travel_order_id }}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div class="notification-card-body">
-                    <p>{{ notificationMessageLine1 }}</p>
-                    <p>{{ notificationMessageLine2 }}</p>
-                  </div>
-                </div>
-
-                <div class="notification-meta-grid">
-                  <span>Solicitado em: {{ notificationRequestedAt }}</span>
-                  <span>Notificado em: {{ notificationNotifiedAt }}</span>
-                </div>
-              </div>
-
-              <!-- Rodapé -->
-              <div class="modal-footer">
-                <Button label="Fechar" @click="selectedNotification = null" />
-              </div>
-            </div>
-          </div>
+          <NotificationModal
+            :notification="selectedNotification"
+            @close="selectedNotification = null"
+          />
 
         </div>
       </div>
@@ -495,19 +316,18 @@ import { useRouter } from 'vue-router'
 import api from '../services/api'
 import { formatDate } from '../utils/date'
 import HeaderBar from './HeaderBar.vue'
+import NotificationModal from '../components/notifications/NotificationModal.vue'
+import OrdersFilterBar from '../components/orders/OrdersFilterBar.vue'
 import airportCities from '../data/airportCitiesBr.json';
+import OrdersTable from '../components/orders/OrdersTable.vue'
 
 
 // PrimeVue components
 import Button from 'primevue/button'
 import Card from 'primevue/card'
-import DataTable from 'primevue/datatable'
-import Column from 'primevue/column'
 import Tag from 'primevue/tag'
 import Dialog from 'primevue/dialog'
-import Dropdown from 'primevue/dropdown'
 import Calendar from 'primevue/calendar'
-import InputText from 'primevue/inputtext'
 import ProgressBar from 'primevue/progressbar'
 
 // router para logout
@@ -569,105 +389,6 @@ const notificationsLoading = ref(false)
 
 const selectedNotification = ref(null)
 
-const selectedNotificationTitle = computed(() => {
-  if (!selectedNotification.value) return '';
-
-  const status = selectedNotification.value.data?.new_status?.toLowerCase() || '';
-
-  if (status.includes('aprov')) return 'Boa notícia!';
-  if (status.includes('cancel')) return 'Pedido cancelado';
-
-  return 'Atualização no pedido';
-});
-
-const selectedNotificationMessage = computed(() => {
-  if (!selectedNotification.value) return '';
-
-  const id = selectedNotification.value.data?.travel_order_id;
-  const destination =
-    selectedNotification.value.data?.destination || 'destino não informado';
-  const status = selectedNotification.value.data?.new_status || 'atualizado';
-
-  return `O pedido #${id}, com destino a ${destination}, foi ${status}.`;
-});
-
-const selectedNotificationRequestedAt = computed(() => {
-  if (!selectedNotification.value) return '-';
-
-  const raw =
-    selectedNotification.value.data?.requested_at ||
-    selectedNotification.value.data?.created_at ||
-    null;
-
-  if (!raw) return '-';
-  return new Date(raw).toLocaleString('pt-BR');
-});
-
-const selectedNotificationNotifiedAt = computed(() => {
-  if (!selectedNotification.value) return '-';
-
-  const raw = selectedNotification.value.created_at || null;
-  if (!raw) return '-';
-  return new Date(raw).toLocaleString('pt-BR');
-});
-
-
-
-const showNotificationDialog = ref(false)
-
-
-const isApprovedNotification = computed(() => {
-  return selectedNotification.value?.data?.new_status === 'aprovado';
-});
-
-const notificationTitle = computed(() => {
-  if (!selectedNotification.value) return '';
-  return isApprovedNotification.value ? 'Boa notícia! ✈️' : 'Aviso importante.';
-});
-
-const notificationMessageLine1 = computed(() => {
-  if (!selectedNotification.value) return '';
-
-  const id = selectedNotification.value.data?.travel_order_id;
-  const destination =
-    selectedNotification.value.data?.destination || 'destino não informado';
-
-  if (isApprovedNotification.value) {
-    return `O pedido #${id}, com destino a ${destination}, foi aprovado.`;
-  }
-
-  return `O pedido #${id}, para ${destination}, foi cancelado.`;
-});
-
-const notificationMessageLine2 = computed(() => {
-  if (!selectedNotification.value) return '';
-
-  if (isApprovedNotification.value) {
-    return 'Agora é só se preparar, pois sua viagem está oficialmente em andamento.';
-  }
-
-  return 'Se quiser ajustar alguma informação ou criar um novo pedido, pode contar com a gente.';
-});
-
-const notificationRequestedAt = computed(() => {
-  if (!selectedNotification.value) return '-';
-
-  const raw = selectedNotification.value.data?.requested_at;
-  if (!raw) return '-';
-
-  return new Date(raw).toLocaleString('pt-BR');
-});
-
-const notificationNotifiedAt = computed(() => {
-  if (!selectedNotification.value) return '-';
-
-  const raw = selectedNotification.value.created_at;
-  if (!raw) return '-';
-
-  return new Date(raw).toLocaleString('pt-BR');
-});
-
-
 const filters = ref({
   id: null,
   status: null,
@@ -681,7 +402,6 @@ const form = ref({
   departure_date: null,
   return_date: null
 })
-
 
 const today = new Date();
 today.setHours(0, 0, 0, 0);
@@ -711,17 +431,12 @@ function onAnyDateChange() {
   dateError.value = '';
 }
 
-const filterDestinationAC = ref(null);
+
 const newOrderDestinationAC = ref(null);
 
 function openFilterDestinationSuggestions() {
+  // ao focar, carregamos a lista inicial (sem termo)
   onCityComplete({ query: '' });
-
-  nextTick(() => {
-    if (filterDestinationAC.value && filterDestinationAC.value.show) {
-      filterDestinationAC.value.show();
-    }
-  });
 }
 
 function openNewOrderDestinationSuggestions() {
@@ -734,21 +449,7 @@ function openNewOrderDestinationSuggestions() {
   });
 }
 
-const notificationVariantClass = computed(() => {
-  if (!selectedNotification.value) return ''
 
-  const status = selectedNotification.value.data.new_status
-
-  if (status === 'aprovado') {
-    return 'notification-card--success'
-  }
-
-  if (status === 'cancelado') {
-    return 'notification-card--danger'
-  }
-
-  return ''
-})
 
 const onCityComplete = (event) => {
   const term = (event.query || '').toLowerCase().trim();
@@ -801,14 +502,6 @@ const statusOptions = [
   { label: 'Cancelado', value: 'cancelado' }
 ]
 
-if (storedUser) {
-  try {
-    const user = JSON.parse(storedUser)
-    isAdmin.value = user.role === 'admin'
-  } catch (e) {
-    console.error('Erro ao ler usuário do storage', e)
-  }
-}
 
 // helpers de status para Tag
 function statusLabel(status) {
@@ -845,11 +538,6 @@ async function handleOpenNotification(notification) {
   if (!notification.read_at) {
     await markNotificationAsRead(notification)
   }
-}
-
-
-function closeNotificationDialog() {
-  selectedNotification.value = null
 }
 
 
@@ -984,9 +672,6 @@ async function createOrder() {
   }
 }
 
-
-
-
 function closeSuccessDialog() {
   showSuccessDialog.value = false;
   lastCreatedOrder.value = null;
@@ -1089,84 +774,6 @@ onMounted(() => {
   justify-content: space-between;
 }
 
-.filters-grid {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr)); /* 4 colunas iguais */
-  column-gap: 1rem;
-  row-gap: 1rem;
-  margin-bottom: 1.75rem;
-  align-items: end;
-}
-
-/* linha 1 – 4 colunas normais (ID, Status, Data inicial, Data final) */
-/* linha 2 – Destino grande + botão à direita */
-.field-destination {
-  grid-column: 1 / span 3;  /* ocupa 3 colunas (75%) */
-}
-
-.filter-button {
-  grid-column: 4 / span 1;
-  display: flex;
-  justify-content: flex-end !important;
-  align-items: center;
-  width: 100% !important;
-}
-
-.filter-button-inner {
-  width: auto;      /* deixa o botão com tamanho natural */
-  min-width: 150px; /* opcional – dá mais presença visual */
-}
-
-
-/* TELAS MÉDIAS (2 colunas) */
-@media (max-width: 992px) {
-  .filters-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .field-destination {
-    grid-column: 1 / span 2;
-  }
-
-  .filter-button {
-    grid-column: 1 / span 2;
-    justify-content: flex-start;
-  }
-
-  .filter-button-inner {
-    max-width: none;
-  }
-}
-
-/* TELAS PEQUENAS (1 coluna) */
-@media (max-width: 640px) {
-  .filters-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .field-destination,
-  .filter-button {
-    grid-column: auto;
-  }
-
-  .filter-button-inner {
-    width: 100%;
-  }
-}
-
-/* Forçar o AutoComplete do PrimeVue a ocupar toda a largura da célula */
-.field-destination :deep(.p-autocomplete) {
-  width: 100%;
-}
-
-/* E o input interno também */
-.field-destination :deep(.p-autocomplete-input),
-.field-destination :deep(.p-inputtext) {
-  width: 100%;
-  box-sizing: border-box;
-}
-
-
 .field {
   display: flex;
   flex-direction: column;
@@ -1204,83 +811,6 @@ onMounted(() => {
   width: 100%;
 }
 
-.notification-card {
-  background: var(--modal-card-bg);
-  border: 1px solid var(--modal-border);
-  padding: 1.25rem 1.5rem;
-  border-radius: 10px;
-  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.12);
-}
-
-/* faixa superior de cor, de acordo com o status */
-.notification-card--success {
-  border-top: 4px solid #16a34a;
-}
-
-.notification-card--danger {
-  border-top: 4px solid #ef4444;
-}
-
-.notification-card-header {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-}
-
-.notification-card-icon {
-  width: 2.4rem;
-  height: 2.4rem;
-  border-radius: 999px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(55, 65, 81, 0.7);
-  flex-shrink: 0;
-}
-
-.notification-card--success .notification-card-icon {
-  background: rgba(22, 163, 74, 0.15);
-  color: #4ade80;
-}
-
-.notification-card--danger .notification-card-icon {
-  background: rgba(239, 68, 68, 0.15);
-  color: #fca5a5;
-}
-
-.notification-card-title-main {
-  margin: 0;
-  font-size: 1rem;
-  font-weight: 600;
-  color: #e5e7eb;
-}
-
-.notification-card-title-sub {
-  margin: 0;
-  font-size: 0.85rem;
-  color: #9ca3af;
-}
-
-.notification-card-body {
-  font-size: 0.9rem;
-  color: #e5e7eb;
-}
-
-.notification-card-message {
-  margin-top: 0.5rem;
-  color: #d1d5db;
-}
-
-.notification-card-meta {
-  display: flex;
-  justify-content: space-between;
-  gap: 1rem;
-  font-size: 0.8rem;
-  color: #9ca3af;
-  border-top: 1px solid #1f2933;
-  padding-top: 0.75rem;
-}
-
 .meta-label {
   display: block;
   font-size: 0.75rem;
@@ -1297,153 +827,6 @@ onMounted(() => {
 .notification-card-footer {
   margin-top: 0.5rem;
   text-align: right;
-}
-
-/* ================================
-   MODAL DE NOTIFICAÇÕES — REWORK
-   ================================ */
-
-.modal-backdrop {
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,0.45);
-  backdrop-filter: blur(3px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 9999;
-}
-
-.modal-window {
-  background: var(--modal-bg);
-  color: var(--modal-text);
-  width: 600px;
-  max-width: 92vw;
-  border-radius: 14px;
-  overflow: hidden;
-  box-shadow:
-    0px 14px 28px rgba(0,0,0,0.35),
-    0px 10px 10px rgba(0,0,0,0.25);
-  display: flex;
-  flex-direction: column;
-}
-
-.modal-header {
-  padding: 1.25rem 1.5rem;
-  border-bottom: 1px solid var(--modal-border);
-  font-size: 1.15rem;
-  font-weight: 600;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.modal-body {
-  padding: 1.5rem;
-  display: flex;
-  flex-direction: column;
-  gap: 1.25rem;
-}
-
-.modal-footer {
-  padding: 1rem 1.5rem 1.25rem;
-  display: flex;
-  justify-content: flex-end;
-}
-
-.modal-close-btn {
-  background: transparent;
-  border: none;
-  cursor: pointer;
-  color: var(--modal-text);
-  font-size: 1.3rem;
-  opacity: 0.8;
-}
-.modal-close-btn:hover {
-  opacity: 1;
-}
-
-.modal-body {
-  padding: 1.5rem;
-  display: flex;
-  flex-direction: column;
-  gap: 1.25rem;
-}
-
-
-/* ------ Card de notificação ------ */
-
-.notification-card {
-  background: var(--modal-card-bg);
-  border: 1px solid var(--modal-border);
-  padding: 1.25rem 1.5rem 1.1rem;
-  border-radius: 10px;
-  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.12);
-  --notification-accent: #16a34a;
-  --notification-accent-soft: rgba(22, 163, 74, 0.14);
-  border-top-width: 4px;
-  border-top-color: var(--notification-accent);
-}
-
-.notification-card--danger {
-  --notification-accent: #dc2626;
-  --notification-accent-soft: rgba(220, 38, 38, 0.14);
-}
-
-.notification-card-header {
-  display: flex;
-  gap: 0.9rem;
-  align-items: center;
-  margin-bottom: 0.75rem;
-}
-
-.notification-card-icon-wrapper {
-  width: 40px;
-  height: 40px;
-  border-radius: 999px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--notification-accent-soft);
-}
-
-.notification-card-icon {
-  font-size: 1.1rem;
-  color: var(--notification-accent);
-}
-
-.notification-card-header-texts {
-  display: flex;
-  flex-direction: column;
-  gap: 0.15rem;
-}
-
-.notification-card-title {
-  font-size: 1rem;
-  font-weight: 600;
-  color: var(--modal-text);
-}
-
-.notification-card-subtitle {
-  font-size: 0.86rem;
-  color: var(--modal-subtle-text);
-}
-
-.notification-card-body p {
-  margin: 0 0 0.15rem;
-  font-size: 0.92rem;
-  color: var(--modal-subtle-text);
-  line-height: 1.45;
-}
-
-/* Meta */
-.notification-meta-grid {
-  display: flex;
-  justify-content: space-between;
-  padding-top: 1rem;
-  border-top: 1px solid var(--modal-border);
-  font-size: 0.85rem;
-  color: var(--modal-subtle-text);
 }
 
 /* Campo 'Destino' no modal de novo pedido ocupa toda a largura */
@@ -1548,40 +931,6 @@ html.app-dark .p-dialog .success-summary-row .value {
 
 
 /* -------------------------------
-   BOTÃO APROVAR
--------------------------------- */
-.btn-approve {
-  background: #dcfce7 !important;     /* fundo suave */
-  border: 2px solid #16a34a !important; /* borda forte */
-  color: #166534 !important;          /* texto/ícone mais escuros */
-  font-weight: 600;
-  border-radius: 6px;
-  transition: all 0.2s ease;
-}
-
-.btn-approve:hover {
-  background: #bbf7d0 !important;     /* leve escurecido */
-  border-color: #15803d !important;   /* borda fica mais forte */
-}
-
-/* -------------------------------
-   BOTÃO CANCELAR
--------------------------------- */
-.btn-cancel {
-  background: #fee2e2 !important;      /* fundo suave */
-  border: 2px solid #dc2626 !important; /* borda forte */
-  color: #991b1b !important;           /* texto/ícone escuros */
-  font-weight: 600;
-  border-radius: 6px;
-  transition: all 0.2s ease;
-}
-
-.btn-cancel:hover {
-  background: #fecaca !important;      /* leve escurecido */
-  border-color: #b91c1c !important;    /* borda mais forte */
-}
-
-/* -------------------------------
    TEMA DARK — melhor contraste
 -------------------------------- */
 html.app-dark .btn-approve {
@@ -1602,19 +951,6 @@ html.app-dark .btn-cancel {
 
 html.app-dark .btn-cancel:hover {
   background: rgba(239, 68, 68, 0.26) !important;
-}
-
-.btn-details {
-  background: #e5e7eb !important;
-  border: 1px solid #9ca3af !important;
-  color: #111827 !important;
-  font-weight: 500;
-  border-radius: 6px;
-  padding-inline: 0.75rem;
-}
-
-.btn-details:hover {
-  background: #d1d5db !important;
 }
 
 /* Cabeçalho do modal de detalhes */
@@ -1662,23 +998,6 @@ html.app-dark .order-details-row .label {
 html.app-dark .order-details-row .value {
   color: #e5e7eb;
 }
-
-/* Botão DETALHES — Slate Azulada */
-.button-details {
-  background-color: #e8f1ff !important; /* fundo suave */
-  border: 1px solid #4f81c7 !important; /* borda destacada */
-  color: #2a3f66 !important; /* texto */
-  font-weight: 500;
-  padding: 0.45rem 0.85rem;
-  border-radius: 6px;
-}
-
-.button-details:hover {
-  background-color: #d9e9ff !important;
-  border-color: #3b6fb0 !important;
-  color: #1f3352 !important;
-}
-
 
 .status-confirm-body {
   display: flex;
