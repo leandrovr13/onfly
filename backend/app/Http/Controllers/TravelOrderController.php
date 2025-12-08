@@ -67,20 +67,18 @@ class TravelOrderController extends Controller
     {
         $data = $request->validate([
             'destination'    => ['required', 'string', 'max:255'],
-            'departure_date' => ['required', 'date'],
+            'departure_date' => ['required', 'date', 'after_or_equal:today'],
             'return_date'    => ['required', 'date', 'after_or_equal:departure_date'],
         ]);
 
-        $order = TravelOrder::create([
-            'user_id'        => $request->user()->id,
-            'destination'    => $data['destination'],
-            'departure_date' => $data['departure_date'],
-            'return_date'    => $data['return_date'],
-            'status'         => 'solicitado',
-        ]);
+        $data['user_id'] = $request->user()->id;
+        $data['status']  = 'solicitado';
+
+        $order = TravelOrder::create($data);
 
         return response()->json($order->load('user'), 201);
     }
+
 
 
     /**
