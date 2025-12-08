@@ -13,6 +13,7 @@ class UserTest extends TestCase
 
     public function test_is_admin_returns_true_when_role_is_admin()
     {
+
         $admin = User::factory()->create([
             'role' => 'admin',
         ]);
