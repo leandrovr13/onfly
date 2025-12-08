@@ -136,7 +136,6 @@ A tela `/register` permite criar usuários:
 - Nome  
 - Email  
 - Telefone  
-- Avatar  
 - Senha  
 
 Usuários cadastrados têm `role = user`.
