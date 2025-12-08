@@ -39,7 +39,7 @@ Instale:
 
 Verifique:
 
-```bash
+```
 docker --version
 docker compose version
 git --version
@@ -63,7 +63,7 @@ onfly/
 
 Na raiz:
 
-```bash
+```
 docker compose up -d --build
 ```
 
@@ -81,25 +81,25 @@ Serviços:
 
 Acesse o container:
 
-```bash
+```
 docker compose exec app bash
 ```
 
 Instale dependências:
 
-```bash
+```
 composer install
 ```
 
 Rode migrations:
 
-```bash
+```
 php artisan migrate
 ```
 
 Crie usuário admin:
 
-```bash
+```
 php artisan db:seed --class=AdminUserSeeder
 ```
 
@@ -167,6 +167,10 @@ Regras:
 - Status só pode mudar para `aprovado` ou `cancelado`.
 - Pedido aprovado **não pode** ser cancelado.
 
+> **Observação:** A consulta detalhada de um pedido pode ser feita via filtro `id`, por exemplo:  
+> `GET /api/travel-orders?id=123`.  
+> Essa abordagem segue o padrão REST simplificado adotado para o teste técnico.
+
 ### Notificações
 
 | Método | Rota | Descrição |
@@ -198,7 +202,7 @@ A API retorna viagens **que intersectam** o intervalo solicitado.
 
 Dentro do container backend:
 
-```bash
+```
 docker compose exec app bash
 php artisan test
 ```
@@ -245,7 +249,7 @@ A suíte utiliza **SQLite em memória**, configurado no bootstrap de testes:
 
 - Controllers enxutos e claros
 - Regras de validação no próprio controller (simples e direto)
-- Autenticação via Sanctum
+- Autenticação via Sanctum (token Bearer armazenado no frontend)
 - Notificações via Laravel Notifications (`database`)
 - Regra de interseção de datas implementada diretamente no query builder
 - Escolha proposital: **evitar over-engineering**  
@@ -261,9 +265,11 @@ Motivação:
 - SPA com Vue Router (login, registro, dashboard, perfil)
 - Estado simples baseado em `localStorage`
 - API centralizada em `services/api.js`
-- Componentes PrimeVue (Datatable, Dialog, Toast, Password etc.)
+- Componentes PrimeVue (Datatable com loading bar, Dialog, Toast, Password etc.)
 - Tema Aura com suporte a dark mode
 - Formulário de perfil com máscara de telefone e validações de senha
+- Empty state amigável quando não há pedidos
+- Loading bar exibido durante carregamentos da API
 
 Implementação da notificação:
 
@@ -277,7 +283,7 @@ Implementação da notificação:
 ## 📌 Observações Técnicas
 
 ### ⚠️ Avisos no console do navegador  
-O console do navegador pode exibir alguns **avisos de depreciação** relacionados a componentes do PrimeVue (como `tooltip` e o antigo `DatePicker`).  
+O console do navegador pode exibir alguns **avisivos de depreciação** relacionados a componentes do PrimeVue (como `tooltip` e o antigo `DatePicker`).  
 Esses avisos não afetam o funcionamento da aplicação e foram mantidos conforme estão por decisão de **escopo e prazo** deste teste técnico.  
 Toda a aplicação opera normalmente apesar dessas mensagens.
 
@@ -301,27 +307,25 @@ Para o contexto do teste técnico, o JSON local oferece uma abordagem **leve, ef
 
 Reiniciar containers:
 
-```bash
+```
 docker compose down && docker compose up -d --build
 ```
 
 Acessar backend:
 
-```bash
+```
 docker compose exec app bash
 ```
 
 Logs:
 
-```bash
+```
 docker compose logs -f app
 docker compose logs -f frontend
 ```
 
 Resetar tudo:
 
-```bash
+```
 docker compose down -v
 ```
-
----
