@@ -52,19 +52,6 @@
             </small>
           </div>
 
-
-          <div class="field">
-            <label>Foto (avatar)</label>
-            <input
-              type="file"
-              accept="image/*"
-              @change="onPhotoChange"
-            />
-            <small v-if="fieldErrors.photo" class="error-text">
-              {{ fieldErrors.photo }}
-            </small>
-          </div>
-
           <div class="field">
             <label>Senha</label>
             <Password
@@ -129,7 +116,6 @@ import Password from 'primevue/password'
 
 const router = useRouter()
 const loading = ref(false)
-const photoFile = ref(null)
 
 const form = ref({
   name: '',
@@ -160,11 +146,6 @@ function translateError(message) {
   return errorTranslations[message] || message; // fallback: mantém original caso não mapeado
 }
 
-
-function onPhotoChange(event) {
-  const files = event.target.files
-  photoFile.value = files && files[0] ? files[0] : null
-}
 
 function formatPhone(value) {
   if (!value) return ''
@@ -213,10 +194,6 @@ async function handleRegister() {
     data.append('phone', form.value.phone || '')
     data.append('password', form.value.password)
     data.append('password_confirmation', form.value.password_confirmation)
-
-    if (photoFile.value) {
-      data.append('photo', photoFile.value)
-    }
 
     const response = await api.post('/auth/register', data, {
       headers: { 'Content-Type': 'multipart/form-data' },

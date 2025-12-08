@@ -5,6 +5,18 @@
     responsiveLayout="scroll"
     class="mt-3"
   >
+    <!-- ESTADO VAZIO -->
+    <template #empty>
+      <div class="empty-state">
+        <i class="pi pi-inbox empty-icon"></i>
+        <p class="empty-title">Nenhum pedido encontrado</p>
+        <p class="empty-subtitle">
+          Use o botão <strong>"Novo Pedido"</strong> para criar seu primeiro pedido
+          ou ajuste os filtros para ver outros resultados.
+        </p>
+      </div>
+    </template>
+
     <Column field="id" header="ID" style="width: 80px" />
 
     <Column field="destination" header="Destino" />
@@ -61,14 +73,13 @@
         </div>
 
         <Button
-            v-else
-            label="Detalhes"
-            icon="pi pi-search"
-            size="small"
-            class="btn-details"
-            @click="$emit('details', data)"
+          v-else
+          label="Detalhes"
+          icon="pi pi-search"
+          size="small"
+          class="btn-details"
+          @click="$emit('details', data)"
         />
-
       </template>
     </Column>
   </DataTable>
@@ -106,7 +117,6 @@ const props = defineProps({
 
 defineEmits(['approve', 'cancel', 'details'])
 
-// toRefs mantém reatividade dos props dentro do template
 const { orders, isAdmin, statusLabel, statusSeverity, formatDate } = toRefs(props)
 </script>
 
@@ -114,6 +124,45 @@ const { orders, isAdmin, statusLabel, statusSeverity, formatDate } = toRefs(prop
 .actions-cell {
   display: flex;
   gap: 0.5rem;
+}
+
+/* -------------------------------
+   ESTADO VAZIO DA TABELA
+-------------------------------- */
+.empty-state {
+  padding: 2.5rem 1rem;
+  text-align: center;
+  color: #6b7280;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.empty-icon {
+  font-size: 2.2rem;
+  margin-bottom: 0.3rem;
+  color: #9ca3af;
+}
+
+.empty-title {
+  margin: 0;
+  font-weight: 600;
+  font-size: 1rem;
+}
+
+.empty-subtitle {
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+/* Dark mode */
+html.app-dark .empty-state {
+  color: #9ca3af;
+}
+
+html.app-dark .empty-icon {
+  color: #6b7280;
 }
 
 /* -------------------------------
@@ -174,17 +223,16 @@ html.app-dark .btn-cancel:hover {
 }
 
 html.app-dark .btn-details {
-  background-color: #1c2a3a !important;  /* azul bem escuro */
+  background-color: #1c2a3a !important;
   border: 1px solid #4f81c7 !important;
-  color: #bcd8ff !important;  /* azul claro */
+  color: #bcd8ff !important;
 }
 
 html.app-dark .btn-details:hover {
-  background-color: #223549 !important; /* hover */
+  background-color: #223549 !important;
   border-color: #6da1ff !important;
   color: #d6e6ff !important;
 }
-
 
 /* Botão DETALHES — Slate Azulada */
 .btn-details {
@@ -202,6 +250,4 @@ html.app-dark .btn-details:hover {
   border-color: #3b6fb0 !important;
   color: #1f3352 !important;
 }
-
-
 </style>

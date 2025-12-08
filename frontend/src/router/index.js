@@ -6,6 +6,10 @@ import ProfileView from '../views/ProfileView.vue'
 
 const routes = [
   {
+    path: '/',
+    redirect: '/login',
+  },
+  {
     path: '/login',
     name: 'login',
     component: LoginView

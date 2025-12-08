@@ -275,6 +275,29 @@ Implementação da notificação:
 
 ---
 
+## 📌 Observações Técnicas
+
+### ⚠️ Avisos no console do navegador  
+O console do navegador pode exibir alguns **avisos de depreciação** relacionados a componentes do PrimeVue (como `tooltip` e o antigo `DatePicker`).  
+Esses avisos não afetam o funcionamento da aplicação e foram mantidos conforme estão por decisão de **escopo e prazo** deste teste técnico.  
+Toda a aplicação opera normalmente apesar dessas mensagens.
+
+---
+
+### 🌍 Autocomplete de destinos  
+O campo “Destino” utiliza um **JSON local** contendo as principais cidades brasileiras para oferecer autocomplete rápido e sem dependências externas.  
+
+Em um ambiente real, essa solução pode evoluir para algo mais robusto, como:
+
+- uma **API dedicada** com todas as cidades brasileiras;  
+- integração com bases oficiais (IBGE, aeroportos, geolocalização);  
+- suporte a **busca server-side** com paginação;  
+- priorização por relevância ou histórico do usuário.
+
+Para o contexto do teste técnico, o JSON local oferece uma abordagem **leve, eficiente e suficiente** para demonstrar a integração com o componente de autocomplete do PrimeVue.
+
+---
+
 ## 📜 10. Scripts úteis
 
 Reiniciar containers:

@@ -15,7 +15,6 @@
               id="email"
               v-model="email"
               type="email"
-              placeholder="admin@onfly.test"
               autocomplete="email"
               class="w-full"
             />
